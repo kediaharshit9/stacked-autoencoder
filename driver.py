@@ -4,6 +4,7 @@
 Created on Sun Apr 26 11:15:44 2020
 
 @author: hk3
+testing ground of different functions and designs
 """
 import torch
 import glob   
