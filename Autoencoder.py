@@ -47,6 +47,7 @@ class AE(nn.Module):
         trn = TensorDataset(x_train, y_train)
         trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=batch_size, shuffle=True, num_workers=2)
         
+        N_batches = math.ceil(np.size(train_data, axis=0)/batch_size)
         optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         loss_func = nn.MSELoss()
         print(self)
@@ -62,7 +63,7 @@ class AE(nn.Module):
                 loss.backward()
                 optimizer.step()
                 
-                if(batch_idx%35==0):
+                if(batch_idx%N_batches==0):
                     print('Train epoch: {}, loss: {}'.format(epoch, loss.cpu().data.item()))
         return
         
@@ -158,7 +159,7 @@ class MLFFNN(nn.Module):
         
         trn = TensorDataset(x_train, y_train)
         trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=batch_size, shuffle=True, num_workers=2)
-        modulo_factor = math.ceil(np.size(train_data, axis=0)/batch_size)
+        N_batches = math.ceil(np.size(train_data, axis=0)/batch_size)
         
         optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         
@@ -175,7 +176,7 @@ class MLFFNN(nn.Module):
                 loss.backward()
                 optimizer.step()
                 
-                if(batch_idx%modulo_factor==0):
+                if(batch_idx%N_batches==0):
                     print('Train epoch: {}, loss: {}'.format(epoch, loss.cpu().data.item()))
         return
     
