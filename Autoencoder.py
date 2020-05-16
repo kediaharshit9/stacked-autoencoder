@@ -45,7 +45,7 @@ class AE(nn.Module):
         y_train = Variable(torch.from_numpy(train_data)).type(torch.FloatTensor)
         
         trn = TensorDataset(x_train, y_train)
-        trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=batch_size, shuffle=True, num_workers=4)
+        trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=batch_size, shuffle=True, num_workers=2)
         
         optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         loss_func = nn.MSELoss()
@@ -72,7 +72,7 @@ class AE(nn.Module):
         y_train = Variable(torch.from_numpy(train_data)).type(torch.FloatTensor)
         
         trn = TensorDataset(x_train, y_train)
-        trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=1, shuffle=False, num_workers=4)
+        trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=1, shuffle=False, num_workers=2)
         
         #print(self)
         encoded_data = []
