@@ -59,7 +59,7 @@ compressor.stack_training(train, epochs, learning_rate, batch_size)
 epochs = 10
 learning_rate = 0.001
 batch_size = 50
-classifier = MLFFNN([dim, 256, 64, 32, 5])
+classifier = MLFFNN([dim, 256, 64, 32, 16, 5])
 
 # import weights
 for i in range(3):
