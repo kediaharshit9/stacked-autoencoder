@@ -39,30 +39,38 @@ train = np.array(train)
 
 true_class = []
 n_classes = np.size(data_set, axis=0)
+class_name = ["coast", "insidecity", "opencountry", "street", "tallbuilding"]
 for i in range(n_classes):
-    my_class = np.zeros(n_classes)
-    my_class[i] = 1
+    my_class = i
     for j in range(np.size(data_set[i], axis=0)):
         true_class.append(my_class)
     
 true_class = np.array(true_class)
 
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # use AutoEncoder for dimension reduction
+print("training auto-encoder")
 red_dim = 32
 model = AE(dim, red_dim)
 learning_rate = 0.001
-epochs = 10
+epochs = 100
 batch_size = 50
 model.train(train, epochs, learning_rate, batch_size)
 red_train = model.get_encoding(train) 
 
-
+print("training classifier")
+learning_rate = 0.001
+batch_size =  50
+epochs = 10
 layer_sizes = [red_dim, 30, 15, 5]
 classifier = MLFFNN(layer_sizes)
 classifier.train(red_train, true_class, epochs, learning_rate, batch_size)
+op = classifier.get_class(red_train, true_class)
 
-op = classifier.get_class(red_train)
+confusion_matrix = np.zeros([5,5])
+#row is actual, column is predicted
+
+for i in range(len(op)):
+    confusion_matrix[true_class[i]][op[i]] += 1

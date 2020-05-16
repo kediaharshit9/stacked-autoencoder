@@ -135,34 +135,42 @@ class MLFFNN(nn.Module):
         self.layer = nn.ModuleList()
         for i in range(1, len(dims)):
             self.layer.append(nn.Linear(dims[i-1], dims[i]))
-            
-            
+        """ 
+        super(MLFFNN, self).__init__()
+        self.fc1 = nn.Linear(d_inp, d_hid)
+        self.fc2 = nn.Linear(d_hid, d_out)
+        """
     def forward(self, x):
+        
         for i in range(self.n_layers - 2):
             x = self.layer[i](x)
-            x = torch.nn.ReLU(x)
-        x = torch.nn.Softmax(self.layer[self.n_layers - 2](x))
+            x = F.relu(x)
+        x = self.layer[self.n_layers - 2](x)
         return x
-        
+        """
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+        """
     def train(self, train_data, train_results, epochs, learning_rate, batch_size):
         x_train = Variable(torch.from_numpy(train_data)).type(torch.FloatTensor)
-        y_train = Variable(torch.from_numpy(train_results)).type(torch.FloatTensor)
+        y_train = Variable(torch.from_numpy(train_results))
         
         trn = TensorDataset(x_train, y_train)
         trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=batch_size, shuffle=True, num_workers=2)
         modulo_factor = math.ceil(np.size(train_data, axis=0)/batch_size)
         
         optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
-        loss_func = nn.CrossEntropyLoss()
+        
         print(self)
         
         losses = []
         for epoch in range(epochs):
-            for batch_idx, (data, target) in enumerate(trn_dataloader):
+            for batch_idx, (data, label) in enumerate(trn_dataloader):
                 data = torch.autograd.Variable(data)
                 optimizer.zero_grad()
                 pred = self.forward(data)
-                loss = loss_func(pred, data)
+                loss = F.cross_entropy(pred, label)
                 losses.append(loss.cpu().data.item())
                 loss.backward()
                 optimizer.step()
@@ -170,12 +178,15 @@ class MLFFNN(nn.Module):
                 if(batch_idx%modulo_factor==0):
                     print('Train epoch: {}, loss: {}'.format(epoch, loss.cpu().data.item()))
         return
-    def get_class(self, dataset):
-        x_inp = Variable(torch.from_numpy(dataset)).type(torch.FloatTensor)
-        trn = TensorDataset(x_inp)
-        dataloader = torch.utils.data.DataLoader(trn, batch_size=1, shuffle=False)
-        preds = []
-        for batch_idx, (data) in enumerate(dataloader):
-            pred = self.forward(data).detach().numpy().flatten()
-            preds.append(pred)
+    
+    def get_class(self, dataset, true_class):
+        with torch.no_grad():
+            x_inp = Variable(torch.from_numpy(dataset)).type(torch.FloatTensor)
+            y_inp = Variable(torch.from_numpy(true_class))
+            trn = TensorDataset(x_inp, y_inp)
+            dataloader = torch.utils.data.DataLoader(trn, batch_size=1, shuffle=False)
+            preds = []
+            for batch_idx, (data, target) in enumerate(dataloader):
+                pred = self.forward(data).detach().numpy()
+                preds.append(np.argmax(pred))
         return preds
