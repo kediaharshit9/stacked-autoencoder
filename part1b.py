@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Apr 26 11:15:44 2020
+Created on Sat May 16 10:44:20 2020
 
 @author: hk3
+CS6910: Assignment2, part 1(B)
 """
+
 import torch
 import glob   
 import numpy as np
 from Autoencoder import AE
-from Autoencoder import Stacked_AE
-from torch import nn
-from torch.autograd import Variable
-from torch.utils.data import TensorDataset
+from Autoencoder import MLFFNN
 
 train = []
 data_set = []
@@ -36,6 +35,7 @@ for folder in folders:
     data_set.append(np.array(category))
 
 dim = len(train[0])
+train = np.array(train)
 
 true_class = []
 n_classes = np.size(data_set, axis=0)
@@ -47,24 +47,22 @@ for i in range(n_classes):
     
 true_class = np.array(true_class)
 
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-train_data = np.array(train)
-
-#x_train = Variable(torch.from_numpy(train)).type(torch.FloatTensor)
-#y_train = Variable(torch.from_numpy(train)).type(torch.FloatTensor)
 
 
+# use AutoEncoder for dimension reduction
+red_dim = 32
+model = AE(dim, red_dim)
 learning_rate = 0.001
-epochs = 100
+epochs = 10
 batch_size = 50
-
-model = Stacked_AE(3, [dim, int(dim/2), int(dim/4), int(dim/8)])
-model.stack_training(train_data, epochs, learning_rate, 50)
-
-encoded_data = model.encoding(1, train_data)
-#model = AE(dim, 32)
-#model.train(train_data, epochs, learning_rate, batch_size)
-#encoded_data = model.encoding(train_data)
+model.train(train, epochs, learning_rate, batch_size)
+red_train = model.get_encoding(train) 
 
 
+layer_sizes = [red_dim, 30, 15, 5]
+classifier = MLFFNN(layer_sizes)
+classifier.train(red_train, true_class, epochs, learning_rate, batch_size)
 
+op = classifier.get_class(red_train)

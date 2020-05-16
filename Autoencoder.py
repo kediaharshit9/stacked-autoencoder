@@ -5,6 +5,7 @@ Created on Sun Apr 26 11:04:21 2020
 @author: hk3
 """
 
+import math
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -66,7 +67,7 @@ class AE(nn.Module):
         return
         
     
-    def encoding(self, train_data):
+    def get_encoding(self, train_data):
         x_train = Variable(torch.from_numpy(train_data)).type(torch.FloatTensor)
         y_train = Variable(torch.from_numpy(train_data)).type(torch.FloatTensor)
         
@@ -111,7 +112,7 @@ class Stacked_AE:
     
     
     def encoding(self, i, data_set):
-        return self.AANNs[i].encoding(data_set)
+        return self.AANNs[i].get_encoding(data_set)
                                     
     
     def stack_training(self, train_data, epochs, learning_rate, batch_size):
@@ -119,3 +120,62 @@ class Stacked_AE:
         for i in range(self.N_layers):
             self.AANNs[i].train(data_set, epochs, learning_rate, batch_size)
             data_set = self.encoding(i, data_set);
+            
+
+class MLFFNN(nn.Module):
+    def __init__(self, dims):
+        """
+        Parameters
+        ----------
+        dims : array of size of all layers
+        """
+        super(MLFFNN, self).__init__()
+        self.dims = dims
+        self.n_layers = len(dims)
+        self.layer = nn.ModuleList()
+        for i in range(1, len(dims)):
+            self.layer.append(nn.Linear(dims[i-1], dims[i]))
+            
+            
+    def forward(self, x):
+        for i in range(self.n_layers - 2):
+            x = self.layer[i](x)
+            x = torch.nn.ReLU(x)
+        x = torch.nn.Softmax(self.layer[self.n_layers - 2](x))
+        return x
+        
+    def train(self, train_data, train_results, epochs, learning_rate, batch_size):
+        x_train = Variable(torch.from_numpy(train_data)).type(torch.FloatTensor)
+        y_train = Variable(torch.from_numpy(train_results)).type(torch.FloatTensor)
+        
+        trn = TensorDataset(x_train, y_train)
+        trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=batch_size, shuffle=True, num_workers=2)
+        modulo_factor = math.ceil(np.size(train_data, axis=0)/batch_size)
+        
+        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
+        loss_func = nn.CrossEntropyLoss()
+        print(self)
+        
+        losses = []
+        for epoch in range(epochs):
+            for batch_idx, (data, target) in enumerate(trn_dataloader):
+                data = torch.autograd.Variable(data)
+                optimizer.zero_grad()
+                pred = self.forward(data)
+                loss = loss_func(pred, data)
+                losses.append(loss.cpu().data.item())
+                loss.backward()
+                optimizer.step()
+                
+                if(batch_idx%modulo_factor==0):
+                    print('Train epoch: {}, loss: {}'.format(epoch, loss.cpu().data.item()))
+        return
+    def get_class(self, dataset):
+        x_inp = Variable(torch.from_numpy(dataset)).type(torch.FloatTensor)
+        trn = TensorDataset(x_inp)
+        dataloader = torch.utils.data.DataLoader(trn, batch_size=1, shuffle=False)
+        preds = []
+        for batch_idx, (data) in enumerate(dataloader):
+            pred = self.forward(data).detach().numpy().flatten()
+            preds.append(pred)
+        return preds
