@@ -54,18 +54,21 @@ class AE(nn.Module):
                 
         losses = []
         for epoch in range(epochs):
+            epoch_loss = []
             for batch_idx, (data, target) in enumerate(trn_dataloader):
                 data = torch.autograd.Variable(data)
                 optimizer.zero_grad()
                 pred = self.forward(data)
                 loss = loss_func(pred, data)
-                losses.append(loss.cpu().data.item())
+                epoch_loss.append(loss.cpu().data.item())
                 loss.backward()
                 optimizer.step()
                 
-                if(batch_idx%N_batches==0):
-                    print('Train epoch: {}, loss: {}'.format(epoch, loss.cpu().data.item()))
-        return
+            epoch_loss = np.array(epoch_loss)
+            mean_loss = np.mean(epoch_loss)
+            print('Train epoch: {}, loss: {}'.format(epoch, mean_loss))
+            losses.append(mean_loss)    
+        return np.array(losses)
         
     
     def get_encoding(self, train_data):
@@ -118,9 +121,12 @@ class Stacked_AE:
     
     def stack_training(self, train_data, epochs, learning_rate, batch_size):
         data_set = train_data;
+        losses = []
         for i in range(self.N_layers):
-            self.AANNs[i].train(data_set, epochs, learning_rate, batch_size)
-            data_set = self.encoding(i, data_set);
+            loss = self.AANNs[i].train(data_set, epochs, learning_rate, batch_size)
+            losses.append([loss])
+            data_set = self.encoding(i, data_set)
+        return losses
             
 
 class MLFFNN(nn.Module):
@@ -167,18 +173,22 @@ class MLFFNN(nn.Module):
         
         losses = []
         for epoch in range(epochs):
+            epoch_loss = []
             for batch_idx, (data, label) in enumerate(trn_dataloader):
                 data = torch.autograd.Variable(data)
                 optimizer.zero_grad()
                 pred = self.forward(data)
                 loss = F.cross_entropy(pred, label)
-                losses.append(loss.cpu().data.item())
+                epoch_loss.append(loss.cpu().data.item())
                 loss.backward()
                 optimizer.step()
                 
-                if(batch_idx%N_batches==0):
-                    print('Train epoch: {}, loss: {}'.format(epoch, loss.cpu().data.item()))
-        return
+            
+            epoch_loss = np.array(epoch_loss)
+            mean_loss =  np.mean(epoch_loss)
+            print('Train epoch: {}, loss: {}'.format(epoch, mean_loss))
+            losses.append(mean_loss)
+        return losses
     
     def get_class(self, dataset, true_class):
         with torch.no_grad():

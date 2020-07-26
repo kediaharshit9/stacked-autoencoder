@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Sat May 16 12:35:19 2020
 
@@ -13,6 +11,7 @@ import numpy as np
 from Autoencoder import Stacked_AE
 from Autoencoder import MLFFNN
 import copy
+from sklearn.model_selection import train_test_split
 
 train = []
 data_set = []
@@ -48,34 +47,50 @@ for i in range(n_classes):
     
 true_class = np.array(true_class)
 
+train_data, val_data, train_class, val_class = train_test_split(train, true_class, test_size=0.20, shuffle = True)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-epochs = 10
-learning_rate = 0.001
-batch_size = 50
+epochs = 100
+learning_rate = 0.002
+batch_size = 32
 compressor = Stacked_AE(3, [dim, 256, 64, 32])
-compressor.stack_training(train, epochs, learning_rate, batch_size)
+SAE_errors = compressor.stack_training(train_data, epochs, learning_rate, batch_size)
 
-epochs = 10
+epochs = 100
 learning_rate = 0.001
-batch_size = 50
-classifier = MLFFNN([dim, 256, 64, 32, 16, 5])
+batch_size = 32
+classifier = MLFFNN([dim, 256, 64, 32, 5])
 
 # import weights
 for i in range(3):
     classifier.layer[i].parameters = copy.deepcopy( compressor.AANNs[i].encoder.parameters)
 
-classifier.train(train, true_class, epochs, learning_rate, batch_size)
-op = classifier.get_class(train, true_class)
+MLFFNN_errors = classifier.train(train_data, train_class, epochs, learning_rate, batch_size)
 
-confusion_matrix = np.zeros([5,5])
+
+op = classifier.get_class(train_data, train_class)
+confusion_matrix_train = np.zeros([5,5])
 #row is actual, column is predicted
-
+success = 0;
 for i in range(len(op)):
-    confusion_matrix[true_class[i]][op[i]] += 1
+    confusion_matrix_train[train_class[i]][op[i]] += 1
+    if(train_class[i]==op[i]):
+        success += 1
 
+print("Train Accuracy: ", success/len(op))
+    
 
-     
-    
-    
-    
+op_val = classifier.get_class(val_data, val_class)
+confusion_matrix_val = np.zeros([5,5])    
+
+success = 0;
+for i in range(len(op_val)):
+    confusion_matrix_val[val_class[i]][op_val[i]] += 1
+    if(val_class[i]==op_val[i]):
+        success += 1
+            
+print("Validation Accuracy: ", success/len(op_val))
+
+np.save('p2_SAE_losses.npy', SAE_errors)
+np.save('p2_NN_losses.npy', MLFFNN_errors)

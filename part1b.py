@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Sat May 16 10:44:20 2020
 
@@ -12,6 +10,7 @@ import glob
 import numpy as np
 from Autoencoder import AE
 from Autoencoder import MLFFNN
+from sklearn.model_selection import train_test_split
 
 train = []
 data_set = []
@@ -52,25 +51,51 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # use AutoEncoder for dimension reduction
 print("training auto-encoder")
-red_dim = 32
+red_dim = 64
 model = AE(dim, red_dim)
-learning_rate = 0.001
+learning_rate = 0.004
 epochs = 100
-batch_size = 50
-model.train(train, epochs, learning_rate, batch_size)
+batch_size = 32
+AE_training_errors = model.train(train, epochs, learning_rate, batch_size)
 red_train = model.get_encoding(train) 
 
-print("training classifier")
-learning_rate = 0.001
-batch_size =  50
-epochs = 10
-layer_sizes = [red_dim, 30, 15, 5]
-classifier = MLFFNN(layer_sizes)
-classifier.train(red_train, true_class, epochs, learning_rate, batch_size)
-op = classifier.get_class(red_train, true_class)
+train_data, val_data, train_class, val_class = train_test_split(red_train, true_class, test_size=0.20, shuffle = True)
 
-confusion_matrix = np.zeros([5,5])
+
+print("training classifier")
+learning_rate = 0.003
+batch_size =  32
+epochs = 200
+layer_sizes = [red_dim, 32, 16, 5]
+classifier = MLFFNN(layer_sizes)
+MLFFNN_training_errors = classifier.train(train_data, train_class, epochs, learning_rate, batch_size)
+op = classifier.get_class(train_data, train_class)
+
+confusion_matrix_train = np.zeros([5,5])
 #row is actual, column is predicted
 
+success = 0;
 for i in range(len(op)):
-    confusion_matrix[true_class[i]][op[i]] += 1
+    confusion_matrix_train[train_class[i]][op[i]] += 1
+    if(train_class[i]==op[i]):
+        success += 1
+        
+print("Training Accuracy: ", success/len(op))
+
+
+op_val = classifier.get_class(val_data, val_class)
+confusion_matrix_val = np.zeros([5,5])    
+success = 0;
+for i in range(len(op_val)):
+    confusion_matrix_val[val_class[i]][op_val[i]] += 1
+    if(val_class[i]==op_val[i]):
+        success += 1
+            
+print("Validation Accuracy: ", success/len(op_val))
+
+
+##observation: higher LR for AE and lower LR for attcached MLFFNN for better results
+## increasing MLFFNN epochs reduces train error, but validation accuracy decreases 
+
+np.save('p1b_AE_losses.npy', AE_training_errors)
+np.save('p1b_NN_losses.npy', MLFFNN_training_errors)

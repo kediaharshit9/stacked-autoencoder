@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Sat May 16 13:13:19 2020
 
@@ -59,30 +57,43 @@ val_class = val_class.flatten()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-epochs = 5
+epochs = 50
 learning_rate = 0.001
 batch_size = 100
 compressor = Stacked_AE(3, [dim, 256, 64, 32])
-compressor.stack_training(train, epochs, learning_rate, batch_size)
+SAE_errors = compressor.stack_training(train, epochs, learning_rate, batch_size)
 
-epochs = 10
-learning_rate = 0.001
+epochs = 50
+learning_rate = 0.0005
 batch_size = 100
-classifier = MLFFNN([dim, 256, 64, 32, 16, 5])
+classifier = MLFFNN([dim, 256, 64, 32, 5]) #connect output layer
 
-# import weights
+# import weights from auto-encoder
 for i in range(3):
     classifier.layer[i].parameters = copy.deepcopy(compressor.AANNs[i].encoder.parameters)
 
-classifier.train(train, true_class, epochs, learning_rate, batch_size)
+MLFFNN_errors = classifier.train(train, true_class, epochs, learning_rate, batch_size)
 op = classifier.get_class(train, true_class)
 
 confusion_matrix_train = np.zeros([5,5])
 #row is actual, column is predicted
+success = 0;
 for i in range(len(op)):
     confusion_matrix_train[true_class[i]][op[i]] += 1
+    if(true_class[i]==op[i]):
+        success += 1
+print("Train Accuracy: ", success/len(op))
+
 
 op_val = classifier.get_class(validation, val_class)
 confusion_matrix_val = np.zeros([5,5])
+success = 0;
 for i in range(len(op_val)):
     confusion_matrix_val[val_class[i]][op_val[i]] += 1
+    if(val_class[i]==op_val[i]):
+        success += 1
+              
+print("Validation Accuracy: ", success/len(op_val))
+
+np.save('p3_SAE_losses.npy', SAE_errors)
+np.save('p3_NN_losses.npy', MLFFNN_errors)

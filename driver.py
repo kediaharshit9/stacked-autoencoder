@@ -59,7 +59,7 @@ learning_rate = 0.001
 epochs = 100
 batch_size = 50
 
-model = Stacked_AE(3, [dim, int(dim/2), int(dim/4), int(dim/8)])
+model = Stacked_AE(1, [dim, 400])
 model.stack_training(train_data, epochs, learning_rate, 50)
 
 encoded_data = model.encoding(1, train_data)
