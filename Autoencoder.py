@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Apr 26 11:04:21 2020
-@author: hk3
-"""
-
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -140,11 +133,7 @@ class MLFFNN(nn.Module):
         self.layer = nn.ModuleList()
         for i in range(1, len(dims)):
             self.layer.append(nn.Linear(dims[i-1], dims[i]))
-        """ 
-        super(MLFFNN, self).__init__()
-        self.fc1 = nn.Linear(d_inp, d_hid)
-        self.fc2 = nn.Linear(d_hid, d_out)
-        """
+
     def forward(self, x):
         
         for i in range(self.n_layers - 2):
@@ -152,11 +141,7 @@ class MLFFNN(nn.Module):
             x = F.relu(x)
         x = self.layer[self.n_layers - 2](x)
         return x
-        """
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-        """
+
     def train(self, train_data, train_results, epochs, learning_rate, batch_size):
         x_train = Variable(torch.from_numpy(train_data)).type(torch.FloatTensor)
         y_train = Variable(torch.from_numpy(train_results))
