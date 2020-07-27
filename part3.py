@@ -1,7 +1,4 @@
 """
-Created on Sat May 16 13:13:19 2020
-
-@author: hk3
 CS6910:  Assignment2, part 3 (dataset 2)
 """
 

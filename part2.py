@@ -1,8 +1,5 @@
 """
-Created on Sat May 16 12:35:19 2020
-
-@author: hk3
-CS6910:  Assignment2, part 2
+CS6910:  Assignment2, part 2 (dataset 1)
 """
 
 import torch
