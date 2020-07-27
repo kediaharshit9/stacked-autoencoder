@@ -5,7 +5,6 @@ Created on Sun Apr 26 11:04:21 2020
 @author: hk3
 """
 
-import math
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -47,7 +46,6 @@ class AE(nn.Module):
         trn = TensorDataset(x_train, y_train)
         trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=batch_size, shuffle=True, num_workers=2)
         
-        N_batches = math.ceil(np.size(train_data, axis=0)/batch_size)
         optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         loss_func = nn.MSELoss()
         print(self)
@@ -165,7 +163,6 @@ class MLFFNN(nn.Module):
         
         trn = TensorDataset(x_train, y_train)
         trn_dataloader = torch.utils.data.DataLoader(trn, batch_size=batch_size, shuffle=True, num_workers=2)
-        N_batches = math.ceil(np.size(train_data, axis=0)/batch_size)
         
         optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         
